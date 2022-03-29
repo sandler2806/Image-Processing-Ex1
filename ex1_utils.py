@@ -118,6 +118,7 @@ def hsitogramEqualize(imgOrig: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarra
     return imgEq, histOrg, histEQ
 
 
+
 def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarray], List[float]):
     """
         Quantized an image in to **nQuant** colors
@@ -145,22 +146,25 @@ def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarr
     mses = []
 
     for iterNum in range(nIter):
+        # at first I find the initial borders by equal distance for each part
         if First:
-            eachPart = hist.sum() / nQuant
-            Sum = 0
-            borders.append(0)
-            for i in range(256):
-                Sum += hist[i]
-                if Sum >= eachPart:
-                    Sum = 0
-                    borders.append(i + 1)
-            borders.append(256)
-            # for k in range(nQuant + 1):
-            #     borders.append(int(k * (256 / nQuant)))
+            # eachPart = hist.sum() / nQuant
+            # Sum = 0
+            # borders.append(0)
+            # for i in range(256):
+            #     Sum += hist[i]
+            #     if Sum >= eachPart:
+            #         Sum = 0
+            #         borders.append(i + 1)
+            # borders.append(256)
+            for k in range(nQuant + 1):
+                borders.append(int(k * (256 / nQuant)))
             First = False
+        # the next times I will change the borders to be the middle of 2 q(the current avg)
         else:
             for k in range(1, len(borders) - 1):
                 borders[k] = int((q[k - 1] + q[k]) / 2)
+        # I will find the q vector for the borders by minimizing the total intensities error
         for index in range(nQuant):
             Sum = 0
             for j in range(borders[index], borders[index + 1]):
@@ -168,15 +172,17 @@ def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarr
                 Sum += hist[j]
             q[index] /= Sum
         quantizedImage = np.zeros_like(imOrig, dtype=float)
-
+        # I will create a new image and change all the pixels in the image to the relevant q
         for index in range(nQuant):
             quantizedImage[imOrig > borders[index]] = q[index]
+        # calculate the mse
         mse = np.sqrt((imOrig - quantizedImage) ** 2).mean()
         mses.append(mse)
         quantizedImages.append(quantizedImage / 255)
+        # if the mse converged I will stop the procedure
         if np.abs(mse - mses[len(mses) - 2]) < 0.001 and len(mses) > 1:
             break
-
+    # convert back to RGB in case the image was RGB
     if RGB:
         for i in range(len(quantizedImages)):
             quantizedImages[i] = transformYIQ2RGB(np.dstack((quantizedImages[i], YIQ[:, :, 1], YIQ[:, :, 2])))
@@ -201,13 +207,3 @@ def calCumSum(arr: np.array) -> np.ndarray:
     for idx in range(1, arr_len):
         cum_sum[idx] = arr[idx] + cum_sum[idx - 1]
     return cum_sum
-
-
-if __name__ == '__main__':
-    img = imReadAndConvert('beach.jpg', 2)
-    img2 = transformRGB2YIQ(img)
-    plt.imshow(img2)
-    plt.show()
-    imgb = transformYIQ2RGB(img2)
-    plt.imshow(imgb)
-    plt.show()

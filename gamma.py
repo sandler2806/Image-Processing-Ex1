@@ -26,9 +26,9 @@ def gammaDisplay(img_path: str, rep: int):
         img = cv.imread(img_path, 2)
     else:  # rep = LOAD_RGB
         img = cv.imread(img_path, 1)
-    cv.namedWindow('sdf')
+    cv.namedWindow('gammaController')
     trackbar_name = 'gamma %d' % 200
-    cv.createTrackbar(trackbar_name, 'sdf', 0, 200, on_trackbar)
+    cv.createTrackbar(trackbar_name, 'gammaController', 0, 200, on_trackbar)
     on_trackbar(0)
     cv.waitKey()
 
