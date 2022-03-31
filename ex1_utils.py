@@ -118,7 +118,6 @@ def hsitogramEqualize(imgOrig: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarra
     return imgEq, histOrg, histEQ
 
 
-
 def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarray], List[float]):
     """
         Quantized an image in to **nQuant** colors
@@ -146,19 +145,19 @@ def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarr
     mses = []
 
     for iterNum in range(nIter):
-        # at first I find the initial borders by equal distance for each part
+        # at first I find the initial borders that each segment will contain approximately
+        # the same number of pixels
         if First:
-            # eachPart = hist.sum() / nQuant
-            # Sum = 0
-            # borders.append(0)
-            # for i in range(256):
-            #     Sum += hist[i]
-            #     if Sum >= eachPart:
-            #         Sum = 0
-            #         borders.append(i + 1)
-            # borders.append(256)
-            for k in range(nQuant + 1):
-                borders.append(int(k * (256 / nQuant)))
+            eachPart = hist.sum() / nQuant
+            Sum = 0
+            borders.append(0)
+            for i in range(256):
+                Sum += hist[i]
+                if Sum >= eachPart:
+                    Sum = 0
+                    borders.append(i + 1)
+            borders.append(256)
+
             First = False
         # the next times I will change the borders to be the middle of 2 q(the current avg)
         else:
