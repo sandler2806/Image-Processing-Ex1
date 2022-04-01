@@ -149,27 +149,37 @@ def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarr
         # the same number of pixels
         if First:
             eachPart = hist.sum() / nQuant
-            Sum = 0
-            borders.append(0)
-            for i in range(256):
-                Sum += hist[i]
-                if Sum >= eachPart:
-                    Sum = 0
-                    borders.append(i + 1)
-            borders.append(256)
-
+            alpha = 1  # I use alpha because not always I can separate the pixels exactly to N+1 borders that
+            # each part contains more than hist.sum() / nQuant so if i get less than N+1 borders I try with
+            # less pixels in each part with the help of alpha
+            while len(borders) < nQuant + 1:
+                borders = [0]
+                Sum = 0
+                for i in range(256):
+                    Sum += hist[i]
+                    if Sum >= alpha * eachPart:
+                        Sum = 0
+                        borders.append(i + 1)
+                borders.append(256)
+                alpha -= 0.005
+            while len(borders) > nQuant + 1:  # if there are too many borders I drop some from the end
+                borders.pop(-2)
             First = False
         # the next times I will change the borders to be the middle of 2 q(the current avg)
         else:
             for k in range(1, len(borders) - 1):
-                borders[k] = int((q[k - 1] + q[k]) / 2)
+                if int((q[k - 1] + q[k]) / 2) != borders[k - 1]:
+                    borders[k] = int((q[k - 1] + q[k]) / 2)
         # I will find the q vector for the borders by minimizing the total intensities error
         for index in range(nQuant):
             Sum = 0
             for j in range(borders[index], borders[index + 1]):
                 q[index] += hist[j] * j
                 Sum += hist[j]
-            q[index] /= Sum
+            if Sum == 0:  # if the sum is equal to zero I cant divide by it so I choose q as the left border
+                q[index] = borders[index]
+            else:
+                q[index] /= Sum
         quantizedImage = np.zeros_like(imOrig, dtype=float)
         # I will create a new image and change all the pixels in the image to the relevant q
         for index in range(nQuant):
